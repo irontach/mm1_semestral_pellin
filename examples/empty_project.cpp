@@ -106,7 +106,7 @@ public:
 			{
 				std::unique_lock<std::mutex> lock(mutex_);
 				coefficient_array = fft.FFT1D(sample_cache_.begin(), sample_cache_.end());
-				x_count += 
+				//x_count += 
 			}
 
 			// Number of unique coefficients
