@@ -91,6 +91,16 @@ void draw_empty_rectangle(video_buffer_t& data, rectangle_t rectangle, int borde
 					border, rectangle.height- 2* border), color);
 }
 
+void draw_empty_rectangle_ondra(video_buffer_t& data, rectangle_t rectangle, int border, rgb_t color)
+{
+	rectangle = intersection(data.size, rectangle);
+
+	// Draw top part
+	draw_rectangle(data, rectangle_t(rectangle.x, rectangle.y, rectangle.width, border), color);
+	
+
+}
+
 void draw_line_steep(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, iimavlib::rgb_t color)
 {
 	if (start.y > end.y) std::swap(start,end);

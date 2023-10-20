@@ -1,5 +1,5 @@
-#include "../iimavlib/WinMMError.h"
-#include "../iimavlib/Utils.h"
+#include "../include/iimavlib/WinMMError.h"
+#include "../include/iimavlib/Utils.h"
 #include <map>
 
 namespace iimavlib {
