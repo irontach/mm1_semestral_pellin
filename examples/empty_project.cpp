@@ -14,7 +14,7 @@
 #include "iimavlib/WaveSource.h"
 #include "iimavlib_high_api.h"
 #include "iimavlib/Utils.h"
-#include "iimavlib/video_ops.h"
+#include "iimavlib/video_ops.h".
 
 #include "iimavlib/filters/SineMultiply.h"
 #ifdef SYSTEM_LINUX
@@ -41,6 +41,12 @@ public:
 			sdl_.start();
 			thread_ = std::thread(std::bind(&Spectrum::execute_thread,this));
 			time_elapsed = 0.000f;
+			whole = (1800.000f / cache_size_);
+			const auto max_int16_value = std::numeric_limits<int16_t>::max();
+			
+			magic_constant = 1.0f / 16384.0f / max_int16_value;
+
+			
 			
 		}
 		~Spectrum()
@@ -48,8 +54,8 @@ public:
 			/*ement: coefficient_array_entire) {
 				std::cout << element << std::endl;
 			}*/
-
-			sdl_.stop();
+			
+			//sdl_.stop();
 			thread_.join();
 		}
 
@@ -74,6 +80,9 @@ public:
 					end_ = true;
 				}
 			}
+			//SDL_SaveBMP(data_, "screenshot.bmp");
+			/*SDL_FreeSurface(sshot);
+			IMG_SavePNG(sshot, "screenshot.png");*/
 		}
 
 		void update_cache(const audio_buffer_t& buffer) {
@@ -94,73 +103,36 @@ public:
 
 		void draw_wave() {
 			// Max value for int16_t
-			const auto max_int16_value = std::numeric_limits<int16_t>::max();
-			// Black color
-			const rgb_t black(0, 0, 0);
-			//std::cout<< time_ << std::endl;
-			const float magic_constant = 1.0f / 16384.0f / max_int16_value;
+			
 			changed_.store(false);
 			
-			//std::cout << time_elapsed << std::endl;
-			float whole = (600.000f / cache_size_);
-			//std::cout << whole << std::endl;
-			// data_.clear(black); 
-			// Doesnt clear the screen now
-
 			// Array for the coefficients from FFT
 			complexarray_t<float> coefficient_array;
 			{
 				std::unique_lock<std::mutex> lock(mutex_);
 				coefficient_array = fft.FFT1D(sample_cache_.begin(), sample_cache_.end());
-				time_elapsed += time_*4;/*
+				time_elapsed += time_;
+			
 
-				auto now = std::chrono::system_clock::now();
-
-				std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-
-				std::cout << "Current time: " << std::ctime(&currentTime) << std::endl;*/
 			}
 
-			// Number of unique coefficients
 			const auto unique_coefficients = (coefficient_array.size() + 1) / 2;
 
-			// This loop calculated the heights of displayed bars
-			//for (int x = 0; x < width_; ++x) {
-			//	// Calculate the index of coefficient to display in this bar
-			//	const size_t coefficient_number = x * unique_coefficients / width_;
-
-			//	// Get value for the coefficient
-			//	const auto coefficient = std::abs(coefficient_array[coefficient_number]) * magic_constant;
-
-			//	// And calculate bar height
-			//	auto y = static_cast<int>(height_ * (1.0f - coefficient));
-
-			//	// Limit the bar height to interval <0, height_ -1>
-			//	y = std::min(height_ - 1, std::max(y, 0));
-			//	std::vector<int> colr = { 255, 0, 0 };
-			//	// And draw the bar
-			//	//draw_bars(x, y, colr);
-			//draw_line(100, 0, { 0, 2, 0 });
-
-			//}
+		
 			for (int y = 0; y < height_; ++y) {
 			   // Calculate the index of coefficient to display at this frequency
 			   const size_t coefficient_number = y * unique_coefficients / height_;
 
 			    // Get value for the coefficient
 			    auto coefficient = std::abs(coefficient_array[coefficient_number]) * magic_constant;
-				//std::cout << coefficient << std::endl;
-			    // And calculate the color coefficient (you may need to implement this function)
-				coefficient *= 600;
+				coefficient *= 900;
 			    // Limit the coefficient to a valid color range (e.g., 0 to 1)
 			    auto yy = static_cast<int>(height_ * (1.0f - coefficient));
 			    yy = std::min(height_ - 1, std::max(yy, 0));
 				auto yycol = static_cast<int>(255 * (1.0f - coefficient));
-				//yycol = std::min(255 - 1, std::max(yy, 0));
 
 				//yycol = (yycol) % 255;
 				std::vector<int> colr = { 1, 0 , 0 };
-			    // Calculate the color based on the coefficient (you may need to implement this function)
 				//if (yycol < (255 / 3)) {
 				//	/*colr[0] = 255 - int(yycol);*/
 				//	colr[1] *= int(yycol / 4);
@@ -177,8 +149,7 @@ public:
 					
 
 
-			    // Draw the bar at the current y position with the calculated color
-				draw_bars(int(time_elapsed*whole), y, colr);
+				draw_bars(int(time_elapsed*whole*15), y, colr);
 			}
 
 		}
@@ -190,7 +161,7 @@ public:
 
 		void draw_bars(int x, int y, std::vector<int> colr) {
 			//iimavlib::draw_empty_rectangle(data_, rectangle_t(x, y, barwidth / 10, height_ - y), 1, rgb_t(colr[0], colr[1], colr[2]));
-			rectangle_t rectangle = intersection(data_.size, rectangle_t(x, y, barwidth / 10, height_ - y));
+			rectangle_t rectangle = intersection(data_.size, rectangle_t(x, y, barwidth/6, height_ - y));
 			iimavlib::draw_rectangle(data_, rectangle_t(rectangle.x, rectangle.y, rectangle.width, 3), rgb_t(colr[0], colr[1], colr[2]));
 
 		}
@@ -215,6 +186,8 @@ public:
 		size_t cache_size_;
 		std::vector<complexarray_t<float>> coefficient_array_entire;
 		float time_elapsed;
+		float whole;
+		float magic_constant;
 
 
 		AudioFFT<float> fft;
@@ -232,7 +205,7 @@ int main(int argc, char** argv)
 	if (argc>2) time = simple_cast<double>(argv[2]);
 	if (argc>3) device_out= simple_cast<audio_id_t>(argv[3]);
 	auto chain = filter_chain<WaveSource>(filename)
-			.add<Spectrum>(800,600,time/1000.0)
+			.add<Spectrum>(1600,900,time/1000.0)
 			.add<PlatformSink>(device_out)
 			.sink();
 
