@@ -9,6 +9,7 @@
 
 #include "iimavlib/AudioFFT.h"
 #include "iimavlib/AudioTypes.h"
+#include "SDL/SDL_video.h"
 
 #include "iimavlib/SDLDevice.h"
 #include "iimavlib/WaveSource.h"
@@ -80,6 +81,8 @@ public:
 					end_ = true;
 				}
 			}
+			auto surface = SDL_GetVideoSurface();
+			SDL_SaveBMP(surface, "screenshot.bmp");
 			//SDL_SaveBMP(data_, "screenshot.bmp");
 			/*SDL_FreeSurface(sshot);
 			IMG_SavePNG(sshot, "screenshot.png");*/
@@ -125,13 +128,11 @@ public:
 
 			    // Get value for the coefficient
 			    auto coefficient = std::abs(coefficient_array[coefficient_number]) * magic_constant;
-				coefficient *= 900;
-			    // Limit the coefficient to a valid color range (e.g., 0 to 1)
-			    auto yy = static_cast<int>(height_ * (1.0f - coefficient));
-			    yy = std::min(height_ - 1, std::max(yy, 0));
-				auto yycol = static_cast<int>(255 * (1.0f - coefficient));
+				coefficient *= 100;
 
-				//yycol = (yycol) % 255;
+				//auto yycol = static_cast<int>(255 * (1.0f - coefficient));
+				auto yycol = static_cast<int>(255 * (coefficient));
+
 				std::vector<int> colr = { 1, 0 , 0 };
 				//if (yycol < (255 / 3)) {
 				//	/*colr[0] = 255 - int(yycol);*/
@@ -144,12 +145,20 @@ public:
 				//else if (yycol < 255 && (yycol > ((255 / 3) * 2))) {
 				//	colr[1] *= 255 - int(yycol);
 				//}
-				colr[0] = 255 - int(yycol*10);
-				colr[2] = int((int(yycol / 4)) * y/height_);
-					
+				colr[0] = int(yycol);	
+				colr[2] = int(50 * y / height_);
 
+				//colr += {int(log(yycol ) * 1000) , int(log(yycol ) * 1000), int(log(yycol ) * 1000)};
 
-				draw_bars(int(time_elapsed*whole*15), y, colr);
+				//draw_bars(int(time_elapsed * whole * 100) % width_, y, colr);
+				//for more precise time development *100 -> faster
+				for (auto i = 0; i < 3; i++) {
+					colr[i] += int(yycol^2);
+					if (colr[i] > 255) {
+						colr[i] = 255;
+					}
+				}
+				draw_bars(int(time_elapsed*whole*100)%width_, y, colr);
 			}
 
 		}
@@ -161,7 +170,7 @@ public:
 
 		void draw_bars(int x, int y, std::vector<int> colr) {
 			//iimavlib::draw_empty_rectangle(data_, rectangle_t(x, y, barwidth / 10, height_ - y), 1, rgb_t(colr[0], colr[1], colr[2]));
-			rectangle_t rectangle = intersection(data_.size, rectangle_t(x, y, barwidth/6, height_ - y));
+			rectangle_t rectangle = intersection(data_.size, rectangle_t(x, y, barwidth/20, height_ - y));
 			iimavlib::draw_rectangle(data_, rectangle_t(rectangle.x, rectangle.y, rectangle.width, 3), rgb_t(colr[0], colr[1], colr[2]));
 
 		}
